@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>PayEasy — Offline UPI Mesh Settlement</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --surface: #121a2f;
+            --surface-2: #1a2540;
+            --text: #e8edf7;
+            --muted: #9aa8c7;
+            --accent: #4f8cff;
+            --accent-2: #22c55e;
+            --warning: #f59e0b;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, #1a2b5f 0%, var(--bg) 45%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            letter-spacing: -0.03em;
+        }
+
+        .tagline {
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        .badge {
+            background: rgba(79, 140, 255, 0.15);
+            border: 1px solid rgba(79, 140, 255, 0.35);
+            color: #b9d0ff;
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .hero {
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 72ch;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 1.35rem;
+        }
+
+        .card h2, .card h3 {
+            font-size: 1.05rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card p, .card li {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .card ul {
+            padding-left: 1.1rem;
+        }
+
+        .card li + li { margin-top: 0.35rem; }
+
+        .flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .step {
+            flex: 1 1 140px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .step strong {
+            display: block;
+            color: var(--accent);
+            margin-bottom: 0.35rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th { color: var(--muted); font-weight: 600; }
+
+        .status-settled { color: var(--accent-2); font-weight: 600; }
+        .status-rejected { color: var(--warning); font-weight: 600; }
+
+        .api-list code {
+            display: inline-block;
+            background: rgba(255,255,255,0.06);
+            padding: 0.2rem 0.45rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-right: 0.35rem;
+        }
+
+        footer {
+            margin-top: 2rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem 1rem 3rem; }
+            .hero { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="brand">
+            <div class="logo">PE</div>
+            <div>
+                <h1>PayEasy</h1>
+                <p class="tagline">Offline UPI mesh-routed deferred settlement demo</p>
+            </div>
+        </div>
+        <span class="badge">Spring Boot 3.3 · Java 17 · H2</span>
+        <a href="/demo" style="display:inline-block;margin-left:12px;background:#238636;color:white;padding:0.45rem 1rem;border-radius:999px;font-size:0.85rem;font-weight:600;text-decoration:none;">▶ Live Simulation</a>
+    </header>
+
+    <section class="hero">
+        <p>
+            PayEasy simulates how UPI payments can work when there is <strong>no internet</strong>.
+            A sender encrypts a payment on their phone, the packet hops across nearby devices over a
+            Bluetooth-style mesh, and when any device regains connectivity it uploads the packet to
+            this backend for secure settlement.
+        </p>
+        <div class="flow">
+            <div class="step"><strong>1</strong>Encrypt payment with hybrid AES + RSA</div>
+            <div class="step"><strong>2</strong>Gossip across virtual mesh phones</div>
+            <div class="step"><strong>3</strong>Bridge node uploads when online</div>
+            <div class="step"><strong>4</strong>Server decrypts &amp; settles accounts</div>
+        </div>
+    </section>
+
+    <div class="grid">
+        <article class="card">
+            <h2>Core idea</h2>
+            <p>
+                Real-world mesh payments let strangers' phones forward encrypted packets without
+                reading them. Only the server holding the RSA private key can decrypt and settle.
+            </p>
+        </article>
+        <article class="card">
+            <h2>Security features</h2>
+            <ul>
+                <li>Hybrid encryption: AES-GCM payload + RSA-OAEP key wrap</li>
+                <li>SHA-256 PIN hashing before encryption</li>
+                <li>Per-payment nonce prevents duplicate ciphertext collisions</li>
+                <li><code>signedAt</code> freshness check blocks replay attacks</li>
+                <li>Packet hash idempotency rejects duplicate uploads</li>
+            </ul>
+        </article>
+        <article class="card">
+            <h2>Tech stack</h2>
+            <ul>
+                <li>Spring Boot Web + Data JPA + Thymeleaf</li>
+                <li>In-memory H2 database for demo accounts</li>
+                <li>Guava SHA-256 hashing utilities</li>
+                <li>ConcurrentHashMap mesh simulator</li>
+            </ul>
+        </article>
+    </div>
+
+    <div class="grid">
+        <article class="card">
+            <h3>Demo accounts</h3>
+            <table>
+                <thead>
+                <tr><th>VPA</th><th>Holder</th><th>Balance</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="account : ${accounts}">
+                    <td th:text="${account.vpa}">heru@pay</td>
+                    <td th:text="${account.holderName}">heru</td>
+                    <td th:text="'₹' + ${account.balance}">₹5000.00</td>
+                </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <article class="card">
+            <h3>Mesh device snapshot</h3>
+            <table>
+                <thead>
+                <tr><th>Device</th><th>Packets held</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${deviceCounts}">
+                    <td th:text="${entry.key}">phone-heru</td>
+                    <td th:text="${entry.value}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </article>
+    </div>
+
+    <article class="card" style="margin-bottom: 2rem;">
+        <h3>Recent transactions</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Bridge</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(recentTransactions)}">
+                <td colspan="5" style="color: var(--muted);">No transactions yet — run the mesh demo via API.</td>
+            </tr>
+            <tr th:each="tx : ${recentTransactions}">
+                <td th:text="${tx.senderVpa}">heru@pay</td>
+                <td th:text="${tx.receiverVpa}">sheru@pay</td>
+                <td th:text="'₹' + ${tx.amount}">₹100</td>
+                <td>
+                    <span th:classappend="${tx.status.name() == 'SETTLED'} ? 'status-settled' : 'status-rejected'"
+                          th:text="${tx.status}">SETTLED</span>
+                </td>
+                <td th:text="${tx.bridgeNodeId}">phone-bridge</td>
+            </tr>
+            </tbody>
+        </table>
+    </article>
+
+    <article class="card api-list">
+        <h3>REST API endpoints</h3>
+        <ul>
+            <li><code>GET /</code> This project overview page</li>
+            <li><code>GET /api/server-key</code> Server RSA public key for senders</li>
+            <li><code>POST /api/mesh/gossip</code> Run one mesh gossip round</li>
+            <li><code>POST /api/mesh/flush</code> Upload packets from bridge devices</li>
+            <li><code>GET /api/accounts</code> List demo account balances</li>
+            <li><code>GET /api/transactions</code> Recent settlement history</li>
+        </ul>
+    </article>
+
+    <footer>
+        Built by Divyanshu · PayEasy demonstrates offline-first payment routing with deferred settlement
+    </footer>
+</div>
+</body>
+</html>

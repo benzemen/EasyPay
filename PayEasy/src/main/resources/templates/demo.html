@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayEasy — Live Mesh Simulation</title>
+    <style>
+        :root {
+            --bg: #070b14;
+            --panel: #111827;
+            --panel2: #1a2235;
+            --border: #2a3548;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
+            --green: #22c55e;
+            --green-dim: #14532d;
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --purple: #a855f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(ellipse at 50% 0%, #1e293b 0%, var(--bg) 55%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .app { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        .topbar {
+            display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 12px; margin-bottom: 20px;
+        }
+        .topbar h1 { font-size: 1.5rem; font-weight: 700; }
+        .topbar p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+        .nav-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+
+        /* Phase stepper */
+        .phases {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .phase {
+            flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 10px;
+            background: var(--panel); border: 1px solid var(--border);
+            font-size: 0.8rem; color: var(--muted); transition: all 0.35s;
+        }
+        .phase.active {
+            border-color: var(--accent); color: var(--text);
+            background: linear-gradient(135deg, #1e3a5f, var(--panel));
+            box-shadow: 0 0 20px rgba(59,130,246,0.25);
+        }
+        .phase.done { border-color: var(--green); color: var(--green); }
+        .phase-num {
+            display: inline-block; width: 20px; height: 20px; border-radius: 50%;
+            background: var(--border); text-align: center; line-height: 20px;
+            font-size: 0.7rem; font-weight: 700; margin-right: 6px;
+        }
+        .phase.active .phase-num { background: var(--accent); color: white; }
+        .phase.done .phase-num { background: var(--green); color: white; }
+
+        .layout {
+            display: grid; grid-template-columns: 1fr 340px; gap: 20px;
+        }
+        @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
+
+        /* Mesh stage */
+        .mesh-panel {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px; position: relative; overflow: hidden;
+        }
+        .mesh-panel h2 {
+            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--muted); margin-bottom: 16px;
+        }
+
+        .bridge-lane {
+            display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 24px; position: relative;
+        }
+        .bridge-label {
+            font-size: 0.75rem; color: var(--green); margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .bridge-arrow {
+            width: 2px; height: 30px; background: linear-gradient(var(--green), transparent);
+            margin: 8px 0;
+        }
+
+        .basement {
+            background: linear-gradient(180deg, #0c1220, #0a0f18);
+            border: 2px dashed var(--border); border-radius: 14px;
+            padding: 24px 16px 16px; position: relative;
+        }
+        .basement-tag {
+            position: absolute; top: -10px; left: 16px;
+            background: var(--panel2); padding: 2px 10px; border-radius: 6px;
+            font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border);
+        }
+
+        .phones-row {
+            display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+        }
+
+        /* Phone card */
+        .phone {
+            width: 148px; background: var(--panel2); border: 2px solid var(--border);
+            border-radius: 18px; padding: 14px 12px; cursor: pointer;
+            transition: all 0.3s; position: relative; text-align: center;
+        }
+        .phone:hover { border-color: #4b5563; transform: translateY(-2px); }
+        .phone.selected-sender { border-color: var(--accent); box-shadow: 0 0 16px rgba(59,130,246,0.4); }
+        .phone.selected-receiver { border-color: var(--purple); box-shadow: 0 0 16px rgba(168,85,247,0.4); }
+        .phone.pulse { animation: pulse 0.8s ease infinite; }
+        .phone.settled-flash { animation: settleFlash 1.2s ease; }
+        .phone.bridge-phone {
+            border-color: var(--green); background: var(--green-dim);
+            width: 160px;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+            50% { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+        }
+        @keyframes settleFlash {
+            0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.8); }
+            100% { box-shadow: 0 0 30px 10px rgba(34,197,94,0); }
+        }
+
+        .phone-icon { font-size: 2rem; margin-bottom: 6px; }
+        .phone-name { font-weight: 700; font-size: 0.9rem; }
+        .phone-vpa { font-size: 0.68rem; color: var(--muted); margin: 2px 0 8px; }
+        .phone-balance {
+            font-family: 'Consolas', monospace; font-size: 0.95rem;
+            color: var(--green); font-weight: 700;
+        }
+        .phone-status {
+            font-size: 0.65rem; margin-top: 6px; padding: 2px 8px;
+            border-radius: 8px; display: inline-block;
+        }
+        .status-offline { background: #374151; color: #9ca3af; }
+        .status-online { background: var(--green); color: white; }
+
+        .phone-packets { margin-top: 8px; min-height: 28px; }
+        .packet-chip {
+            display: inline-block; font-size: 0.62rem; padding: 3px 6px;
+            border-radius: 6px; background: #1e3a5f; color: #93c5fd;
+            border: 1px solid #2563eb; margin: 2px;
+            animation: chipIn 0.4s ease;
+        }
+        @keyframes chipIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .role-badge {
+            position: absolute; top: -8px; right: -8px;
+            font-size: 0.6rem; padding: 2px 6px; border-radius: 6px;
+            font-weight: 700;
+        }
+        .role-sender { background: var(--accent); color: white; }
+        .role-receiver { background: var(--purple); color: white; }
+
+        /* Flying packet animation */
+        #fly-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+        }
+        .fly-packet {
+            position: fixed; padding: 8px 14px; border-radius: 20px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white; font-weight: 700; font-size: 0.85rem;
+            box-shadow: 0 4px 20px rgba(59,130,246,0.6);
+            transition: left 0.55s cubic-bezier(0.4,0,0.2,1),
+                        top 0.55s cubic-bezier(0.4,0,0.2,1);
+            z-index: 10000; white-space: nowrap;
+        }
+        .fly-packet::after {
+            content: '🔒'; margin-left: 4px; font-size: 0.7rem;
+        }
+
+        /* Transfer line overlay */
+        .transfer-line {
+            position: absolute; height: 3px; background: linear-gradient(90deg, var(--accent), var(--purple));
+            transform-origin: left center; z-index: 5; pointer-events: none;
+            animation: lineFlash 0.6s ease;
+        }
+        @keyframes lineFlash {
+            0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; }
+        }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+        .panel {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px;
+        }
+        .panel h3 {
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--muted); margin-bottom: 12px;
+        }
+
+        .pay-form { display: flex; flex-direction: column; gap: 10px; }
+        .field label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 4px; }
+        .field input, .field select {
+            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 0.9rem;
+        }
+        .selection-hint {
+            font-size: 0.8rem; color: var(--muted); padding: 8px;
+            background: var(--bg); border-radius: 8px; border: 1px dashed var(--border);
+        }
+        .selection-hint strong { color: var(--accent); }
+
+        .btn {
+            border: none; padding: 10px 16px; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; width: 100%;
+        }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn-primary { background: var(--green); color: white; }
+        .btn-primary:hover:not(:disabled) { background: #16a34a; }
+        .btn-live {
+            background: linear-gradient(135deg, #2563eb, #7c3aed); color: white;
+            font-size: 1rem; padding: 14px;
+        }
+        .btn-live:hover:not(:disabled) { filter: brightness(1.1); }
+        .btn-secondary { background: var(--accent); color: white; margin-top: 6px; }
+        .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); margin-top: 6px; }
+
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        /* Settlement banner */
+        .settlement-banner {
+            display: none; padding: 14px; border-radius: 10px;
+            background: linear-gradient(135deg, #14532d, #166534);
+            border: 1px solid var(--green); margin-top: 12px;
+            animation: chipIn 0.5s ease;
+        }
+        .settlement-banner.show { display: block; }
+        .settlement-banner .amount { font-size: 1.4rem; font-weight: 800; color: #86efac; }
+        .settlement-banner .route { font-size: 0.85rem; color: #bbf7d0; margin-top: 4px; }
+
+        /* Error/warning banner */
+        .error-banner {
+            display: none; padding: 14px; border-radius: 10px;
+            margin-top: 12px; animation: chipIn 0.5s ease;
+        }
+        .error-banner.show { display: block; }
+        .error-banner.duplicate {
+            background: linear-gradient(135deg, #78350f, #92400e);
+            border: 1px solid var(--orange);
+        }
+        .error-banner.duplicate .error-icon { color: var(--orange); }
+        .error-banner.rejected {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border: 1px solid var(--red);
+        }
+        .error-banner.rejected .error-icon { color: var(--red); }
+        .error-banner .error-title { font-size: 1rem; font-weight: 700; color: #fef3c7; }
+        .error-banner .error-detail { font-size: 0.82rem; color: #fde68a; margin-top: 4px; }
+
+        /* Ledger */
+        .ledger { max-height: 200px; overflow-y: auto; }
+        .tx-item {
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+        .tx-item:last-child { border-bottom: none; }
+        .tx-settled { color: var(--green); }
+        .tx-rejected { color: var(--red); }
+
+        /* Log */
+        #log {
+            background: #020617; color: #4ade80; font-family: Consolas, monospace;
+            font-size: 0.72rem; padding: 10px; border-radius: 8px;
+            max-height: 160px; overflow-y: auto; white-space: pre-wrap;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+<div id="fly-layer"></div>
+
+<div class="app">
+    <div class="topbar">
+        <div>
+            <h1>PayEasy — Live Mesh Simulation</h1>
+            <p>Watch encrypted payments travel phone-to-phone, then settle when a device gets internet</p>
+        </div>
+        <a class="nav-link" href="/">← Project overview</a>
+    </div>
+
+    <div class="phases" id="phases">
+        <div class="phase" data-phase="compose"><span class="phase-num">1</span>Compose &amp; Encrypt</div>
+        <div class="phase" data-phase="inject"><span class="phase-num">2</span>Inject on Sender Phone</div>
+        <div class="phase" data-phase="gossip"><span class="phase-num">3</span>Mesh Gossip (hop by hop)</div>
+        <div class="phase" data-phase="bridge"><span class="phase-num">4</span>Bridge Uploads (4G)</div>
+        <div class="phase" data-phase="settled"><span class="phase-num">5</span>Money Settled</div>
+    </div>
+
+    <div class="layout">
+        <div class="mesh-panel" id="mesh-panel">
+            <h2>Live Mesh Network</h2>
+
+            <div class="bridge-lane">
+                <div class="bridge-label">🌐 Outside — has 4G internet</div>
+                <div id="phone-bridge-slot"></div>
+                <div class="bridge-arrow"></div>
+            </div>
+
+            <div class="basement">
+                <span class="basement-tag">📵 Basement — no internet</span>
+                <div class="phones-row" id="basement-phones"></div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Send Payment</h3>
+                <div class="selection-hint" id="selection-hint">
+                    Click a <strong>sender phone</strong>, then a <strong>receiver phone</strong> in the mesh
+                </div>
+                <div class="pay-form" style="margin-top:12px">
+                    <div class="field">
+                        <label>From (sender)</label>
+                        <select id="senderVpa"></select>
+                    </div>
+                    <div class="field">
+                        <label>To (receiver)</label>
+                        <select id="receiverVpa"></select>
+                    </div>
+                    <div class="field">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="amount" value="500" min="1">
+                    </div>
+                    <div class="field">
+                        <label>UPI PIN</label>
+                        <input type="password" id="pin" value="1234" maxlength="6">
+                    </div>
+                </div>
+                <button class="btn btn-live" id="btn-live" onclick="runLiveDemo()">▶ Run Live Demo</button>
+                <div class="btn-row">
+                    <button class="btn btn-secondary" onclick="sendOnly()">Send Only</button>
+                    <button class="btn btn-secondary" onclick="gossipAnimated()">Gossip</button>
+                </div>
+                <button class="btn btn-secondary" onclick="flushBridges()">Bridge Upload</button>
+                <button class="btn btn-danger" onclick="resetMesh()">Reset Mesh</button>
+
+                <div class="settlement-banner" id="settlement-banner">
+                    <div class="amount" id="settle-amount">₹0</div>
+                    <div class="route" id="settle-route">—</div>
+                </div>
+                <div class="error-banner" id="error-banner">
+                    <div><span class="error-icon">⚠</span> <span class="error-title" id="error-title">Error</span></div>
+                    <div class="error-detail" id="error-detail">—</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Transaction Ledger</h3>
+                <div class="ledger" id="ledger"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Activity Log</h3>
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const DEVICE_ORDER = ['phone-heru', 'phone-sheru', 'phone-tera', 'phone-bhaiya'];
+const HOLDER_NAMES = { heru: 'Heru', sheru: 'Sheru', tera: 'Tera', bhaiya: 'Bhaiya' };
+let selectedSender = null;
+let selectedReceiver = null;
+let isRunning = false;
+let lastBalances = {};
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function log(msg) {
+    const el = document.getElementById('log');
+    el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.textContent;
+}
+
+function setPhase(name) {
+    document.querySelectorAll('.phase').forEach(p => {
+        p.classList.remove('active');
+        const order = ['compose','inject','gossip','bridge','settled'];
+        const ci = order.indexOf(name);
+        const pi = order.indexOf(p.dataset.phase);
+        if (pi < ci) p.classList.add('done');
+        else p.classList.remove('done');
+        if (p.dataset.phase === name) p.classList.add('active');
+    });
+}
+
+function vpaToDevice(vpa) {
+    return 'phone-' + vpa.split('@')[0];
+}
+
+function deviceToVpa(deviceId) {
+    if (deviceId === 'phone-bridge') return 'bridge@pay';
+    return deviceId.replace('phone-', '') + '@pay';
+}
+
+function getPhoneEl(deviceId) {
+    return document.querySelector(`[data-device="${deviceId}"]`);
+}
+
+function phoneCenter(deviceId) {
+    const el = getPhoneEl(deviceId);
+    if (!el) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+async function flyPacket(fromId, toId, label) {
+    const from = phoneCenter(fromId);
+    const to = phoneCenter(toId);
+    const layer = document.getElementById('fly-layer');
+    const dot = document.createElement('div');
+    dot.className = 'fly-packet';
+    dot.textContent = label || '🔒';
+    dot.style.left = (from.x - 40) + 'px';
+    dot.style.top = (from.y - 16) + 'px';
+    layer.appendChild(dot);
+
+    getPhoneEl(fromId)?.classList.add('pulse');
+    await sleep(50);
+    dot.style.left = (to.x - 40) + 'px';
+    dot.style.top = (to.y - 16) + 'px';
+    await sleep(580);
+    getPhoneEl(fromId)?.classList.remove('pulse');
+    getPhoneEl(toId)?.classList.add('pulse');
+    await sleep(300);
+    getPhoneEl(toId)?.classList.remove('pulse');
+    dot.remove();
+}
+
+function renderPhone(device, balance) {
+    const isBridge = device.deviceId === 'phone-bridge';
+    const holder = isBridge ? 'Bridge' : (HOLDER_NAMES[device.deviceId.replace('phone-','')] || device.deviceId);
+    const packets = (device.packets || []).map(p =>
+        `<span class="packet-chip" title="TTL ${p.ttl}">₹${p.amount} ${p.shortId}</span>`
+    ).join('') || '<span style="font-size:0.6rem;color:#64748b">no packets</span>';
+
+    const bal = balance != null ? `₹${parseFloat(balance).toFixed(2)}` : '—';
+    const balChanged = lastBalances[device.vpa] != null && lastBalances[device.vpa] !== balance;
+
+    return `
+        <div class="phone ${isBridge ? 'bridge-phone' : ''} ${balChanged ? 'settled-flash' : ''}"
+             data-device="${device.deviceId}" onclick="onPhoneClick('${device.deviceId}')">
+            <div class="phone-icon">${isBridge ? '📡' : '📱'}</div>
+            <div class="phone-name">${holder}</div>
+            <div class="phone-vpa">${device.vpa}</div>
+            <div class="phone-balance" id="bal-${device.deviceId}">${bal}</div>
+            <div class="phone-status ${device.hasInternet ? 'status-online' : 'status-offline'}">
+                ${device.hasInternet ? '🌐 4G Online' : '📵 Offline'}
+            </div>
+            <div class="phone-packets">${packets}</div>
+        </div>`;
+}
+
+function updateRoleBadges() {
+    document.querySelectorAll('.role-badge').forEach(b => b.remove());
+    if (selectedSender) {
+        const el = getPhoneEl(selectedSender);
+        if (el) { el.classList.add('selected-sender');
+            const b = document.createElement('span'); b.className='role-badge role-sender'; b.textContent='SENDER';
+            el.appendChild(b); }
+    }
+    if (selectedReceiver) {
+        const el = getPhoneEl(selectedReceiver);
+        if (el) { el.classList.add('selected-receiver');
+            const b = document.createElement('span'); b.className='role-badge role-receiver'; b.textContent='RECEIVER';
+            el.appendChild(b); }
+    }
+}
+
+function onPhoneClick(deviceId) {
+    if (deviceId === 'phone-bridge' || isRunning) return;
+    if (!selectedSender) {
+        selectedSender = deviceId;
+        document.getElementById('senderVpa').value = deviceToVpa(deviceId);
+    } else if (!selectedReceiver && deviceId !== selectedSender) {
+        selectedReceiver = deviceId;
+        document.getElementById('receiverVpa').value = deviceToVpa(deviceId);
+    } else {
+        selectedSender = deviceId;
+        selectedReceiver = null;
+        document.getElementById('senderVpa').value = deviceToVpa(deviceId);
+        document.getElementById('receiverVpa').selectedIndex = 0;
+    }
+    document.querySelectorAll('.phone').forEach(p => p.classList.remove('selected-sender','selected-receiver'));
+    updateRoleBadges();
+    const hint = document.getElementById('selection-hint');
+    if (selectedSender && selectedReceiver) {
+        hint.innerHTML = `Payment: <strong>${deviceToVpa(selectedSender)}</strong> → <strong>${deviceToVpa(selectedReceiver)}</strong>`;
+    } else if (selectedSender) {
+        hint.innerHTML = `Sender: <strong>${deviceToVpa(selectedSender)}</strong> — now click receiver phone`;
+    }
+}
+
+async function refresh() {
+    const state = await fetch('/api/mesh/state').then(r => r.json());
+    const accMap = {};
+    (state.accounts || []).forEach(a => { accMap[a.vpa] = a.balance; });
+
+    const bridge = state.devices.find(d => d.deviceId === 'phone-bridge');
+    const basement = DEVICE_ORDER.map(id => state.devices.find(d => d.deviceId === id)).filter(Boolean);
+
+    document.getElementById('phone-bridge-slot').innerHTML =
+        bridge ? renderPhone(bridge, null) : '';
+    document.getElementById('basement-phones').innerHTML =
+        basement.map(d => renderPhone(d, accMap[d.vpa])).join('');
+
+    updateRoleBadges();
+
+    // Populate or update select dropdowns with current balances
+    const senderSel = document.getElementById('senderVpa');
+    const recvSel = document.getElementById('receiverVpa');
+    const prevSender = senderSel.value;
+    const prevRecv = recvSel.value;
+    senderSel.innerHTML = '';
+    recvSel.innerHTML = '';
+    (state.accounts || []).forEach(a => {
+        senderSel.add(new Option(`${a.vpa} (₹${parseFloat(a.balance).toFixed(0)})`, a.vpa));
+        recvSel.add(new Option(a.vpa, a.vpa));
+    });
+    // Restore previous selections
+    if (prevSender) senderSel.value = prevSender;
+    if (prevRecv) recvSel.value = prevRecv;
+
+    const txs = await fetch('/api/transactions').then(r => r.json());
+    document.getElementById('ledger').innerHTML = txs.length ? txs.map(t => `
+        <div class="tx-item">
+            <span class="tx-${t.status.toLowerCase()}">${t.status}</span>
+            ₹${parseFloat(t.amount).toFixed(2)} — ${t.senderVpa} → ${t.receiverVpa}
+            <span style="color:#64748b"> via ${t.bridgeNodeId}</span>
+        </div>
+    `).join('') : '<div style="color:#64748b;font-size:0.8rem">No transactions yet</div>';
+
+    lastBalances = accMap;
+}
+
+async function sendPayment() {
+    const senderVpa = document.getElementById('senderVpa').value;
+    const receiverVpa = document.getElementById('receiverVpa').value;
+    if (senderVpa === receiverVpa) {
+        showError('duplicate', '🚫 Same Sender & Receiver', 'You cannot send money to yourself. Please select a different receiver.');
+        throw new Error('Sender and receiver are the same');
+    }
+    const body = {
+        senderVpa,
+        receiverVpa,
+        amount: parseFloat(document.getElementById('amount').value),
+        pin: document.getElementById('pin').value,
+        ttl: 5
+    };
+    const r = await fetch('/api/demo/send', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+    }).then(r => r.json());
+
+    selectedSender = r.injectedAt;
+    log(`Encrypted ₹${r.amount}: ${r.senderVpa} → ${r.receiverVpa} on ${r.injectedAt}`);
+    await refresh();
+    getPhoneEl(r.injectedAt)?.classList.add('pulse');
+    await sleep(600);
+    getPhoneEl(r.injectedAt)?.classList.remove('pulse');
+    return r;
+}
+
+async function gossipAnimated() {
+    const r = await fetch('/api/mesh/gossip', {method:'POST'}).then(r => r.json());
+    if (r.transferDetails && r.transferDetails.length > 0) {
+        for (const t of r.transferDetails) {
+            await flyPacket(t.from, t.to, t.label || '🔒');
+            log(`Packet hopped: ${t.from} → ${t.to} (TTL ${t.ttlAfter})`);
+        }
+    } else {
+        log('Gossip: no new transfers (TTL exhausted or all devices have packets)');
+    }
+    await refresh();
+    return r;
+}
+
+async function flushBridges() {
+    // Hide previous banners
+    document.getElementById('error-banner').classList.remove('show');
+    document.getElementById('settlement-banner').classList.remove('show');
+
+    const r = await fetch('/api/mesh/flush', {method:'POST'}).then(r => r.json());
+    if (!r.results?.length) {
+        log('No packets on bridge — gossip first until phone-bridge holds a packet');
+        showError('duplicate', '📭 No Packets on Bridge', 'Gossip first until phone-bridge holds a packet, then try Bridge Upload.');
+        return null;
+    }
+    for (const res of r.results) {
+        log(`${res.bridgeNode}: ₹${res.amount} ${res.senderVpa}→${res.receiverVpa} = ${res.outcome}`);
+        if (res.outcome === 'SETTLED') {
+            showSettlement(res.senderVpa, res.receiverVpa, res.amount);
+            const senderDev = vpaToDevice(res.senderVpa);
+            const recvDev = vpaToDevice(res.receiverVpa);
+            await flyPacket('phone-bridge', senderDev, `-₹${res.amount}`);
+            await sleep(200);
+            await flyPacket('phone-bridge', recvDev, `+₹${res.amount}`);
+            getPhoneEl(senderDev)?.classList.add('settled-flash');
+            getPhoneEl(recvDev)?.classList.add('settled-flash');
+        } else if (res.outcome === 'DUPLICATE_DROPPED') {
+            showError('duplicate', '⚠ Duplicate Packet — Already Settled',
+                `₹${res.amount} from ${res.senderVpa} → ${res.receiverVpa} was already settled. Idempotency check blocked the re-settlement.`);
+        } else if (res.outcome === 'REJECTED') {
+            showError('rejected', '❌ Payment Rejected — Insufficient Balance',
+                `₹${res.amount} from ${res.senderVpa} → ${res.receiverVpa} was rejected due to insufficient funds.`);
+        } else if (res.outcome === 'INVALID') {
+            showError('rejected', '❌ Invalid Packet',
+                `${res.reason || 'Unknown error'} — ₹${res.amount} ${res.senderVpa} → ${res.receiverVpa}`);
+        }
+    }
+    await refresh();
+    return r;
+}
+
+function showSettlement(from, to, amount) {
+    document.getElementById('error-banner').classList.remove('show');
+    const banner = document.getElementById('settlement-banner');
+    document.getElementById('settle-amount').textContent = `₹${amount.toFixed(2)} settled`;
+    document.getElementById('settle-route').textContent = `${from} paid ${to} — balances updated live`;
+    banner.classList.add('show');
+}
+
+function showError(type, title, detail) {
+    document.getElementById('settlement-banner').classList.remove('show');
+    const banner = document.getElementById('error-banner');
+    banner.className = 'error-banner show ' + type;
+    document.getElementById('error-title').textContent = title;
+    document.getElementById('error-detail').textContent = detail;
+}
+
+async function runLiveDemo() {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById('btn-live').disabled = true;
+    document.getElementById('settlement-banner').classList.remove('show');
+    document.getElementById('error-banner').classList.remove('show');
+
+    try {
+        setPhase('compose');
+        await sleep(400);
+
+        setPhase('inject');
+        const sent = await sendPayment();
+        await sleep(700);
+
+        setPhase('gossip');
+        let bridgeHasPacket = false;
+        for (let round = 0; round < 4; round++) {
+            await gossipAnimated();
+            const state = await fetch('/api/mesh/state').then(r => r.json());
+            const bridge = state.devices.find(d => d.deviceId === 'phone-bridge');
+            if (bridge && bridge.packetCount > 0) {
+                bridgeHasPacket = true;
+                log('Packet reached bridge device!');
+                getPhoneEl('phone-bridge')?.classList.add('pulse');
+                await sleep(800);
+                getPhoneEl('phone-bridge')?.classList.remove('pulse');
+                break;
+            }
+            await sleep(400);
+        }
+
+        if (!bridgeHasPacket) {
+            log('Packet did not reach bridge in 4 rounds — try gossip again');
+            setPhase('gossip');
+            return;
+        }
+
+        setPhase('bridge');
+        await sleep(500);
+        const flush = await flushBridges();
+
+        if (flush?.results?.some(r => r.outcome === 'SETTLED')) {
+            setPhase('settled');
+        } else if (flush?.results?.some(r => r.outcome === 'DUPLICATE_DROPPED')) {
+            setPhase('settled');
+            log('Idempotency: packet was already settled — duplicate blocked');
+        }
+    } finally {
+        isRunning = false;
+        document.getElementById('btn-live').disabled = false;
+    }
+}
+
+async function sendOnly() {
+    setPhase('compose');
+    await sendPayment();
+    setPhase('inject');
+}
+
+async function resetMesh() {
+    await fetch('/api/mesh/reset', {method:'POST'});
+    selectedSender = null; selectedReceiver = null;
+    document.getElementById('settlement-banner').classList.remove('show');
+    document.getElementById('error-banner').classList.remove('show');
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active','done'));
+    log('Mesh reset');
+    await refresh();
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
