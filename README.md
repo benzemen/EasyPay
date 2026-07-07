@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="[#QuickStart](https://easypay-production-93b3.up.railway.app/)"><img src="https://img.shields.io/badge/🚀_Quick_Start-00d4aa?style=for-the-badge" alt="Quick Start" /></a>
+  <a href="https://easypay-production-93b3.up.railway.app/"><img src="https://img.shields.io/badge/🚀_Quick_Start-00d4aa?style=for-the-badge" alt="Quick Start" /></a>
   <a href="#-architecture"><img src="https://img.shields.io/badge/🏗️_Architecture-7c4dff?style=for-the-badge" alt="Architecture" /></a>
   <a href="#-low-level-design-lld"><img src="https://img.shields.io/badge/📐_LLD_Design-0077b6?style=for-the-badge" alt="LLD" /></a>
   <a href="#-security"><img src="https://img.shields.io/badge/🔐_Security-e63946?style=for-the-badge" alt="Security" /></a>
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://easypay-production-25fc.up.railway.app/"><img src="https://img.shields.io/badge/🔴_Live_Demo-FF003C?style=for-the-badge" alt="Live Demo" /></a>
+  <a href="https://easypay-production-93b3.up.railway.app/"><img src="https://img.shields.io/badge/🔴_Live_Demo-FF003C?style=for-the-badge" alt="Live Demo" /></a>
   <img src="https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17" />
   <img src="https://img.shields.io/badge/Spring_Boot-3.3.0-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot" />
   <img src="https://img.shields.io/badge/Maven-C71A36?style=flat-square&logo=apachemaven&logoColor=white" alt="Maven" />
@@ -30,11 +30,9 @@
 
 > **PayEasy** demonstrates how UPI-like digital payments can work **without any internet connectivity** — using a Bluetooth mesh network to relay encrypted payment packets between phones, and settling them only when one phone eventually reaches internet.
 >
-> 🔴 **[Test the Live Simulation Engine Here]((https://easypay-production-93b3.up.railway.app/))**
+> 🔴 **[Test the Live Simulation Engine Here](https://easypay-production-93b3.up.railway.app/)**
 
 Imagine you're in a **basement**, **parking lot**, or **rural area** with no signal. You need to pay someone ₹500. With PayEasy:
-
-<table>
 <tr>
 <td width="25%" align="center">
 <h3>📱 Step 1</h3>
