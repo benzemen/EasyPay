@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="(https://easypay-production-93b3.up.railway.app/)"><img src="https://img.shields.io/badge/🚀_Quick_Start-00d4aa?style=for-the-badge" alt="Quick Start" /></a>
+  <a href="[#QuickStart](https://easypay-production-93b3.up.railway.app/)"><img src="https://img.shields.io/badge/🚀_Quick_Start-00d4aa?style=for-the-badge" alt="Quick Start" /></a>
   <a href="#-architecture"><img src="https://img.shields.io/badge/🏗️_Architecture-7c4dff?style=for-the-badge" alt="Architecture" /></a>
   <a href="#-low-level-design-lld"><img src="https://img.shields.io/badge/📐_LLD_Design-0077b6?style=for-the-badge" alt="LLD" /></a>
   <a href="#-security"><img src="https://img.shields.io/badge/🔐_Security-e63946?style=for-the-badge" alt="Security" /></a>
@@ -30,7 +30,7 @@
 
 > **PayEasy** demonstrates how UPI-like digital payments can work **without any internet connectivity** — using a Bluetooth mesh network to relay encrypted payment packets between phones, and settling them only when one phone eventually reaches internet.
 >
-> 🔴 **[Test the Live Simulation Engine Here]([https://easypay-production-25fc.up.railway.app/](https://easypay-production-93b3.up.railway.app/))**
+> 🔴 **[Test the Live Simulation Engine Here]((https://easypay-production-93b3.up.railway.app/))**
 
 Imagine you're in a **basement**, **parking lot**, or **rural area** with no signal. You need to pay someone ₹500. With PayEasy:
 
